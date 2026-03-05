@@ -75,20 +75,11 @@ class Eve(threading.Thread):
     # Thread entry point
     # -----------------------------------------------------------------------
     def run(self) -> None:
-        logger.info("[EVE] Eve thread started (attack every %d ticks)", self.attack_interval)
-        while not self._stop_event.is_set():
-            # Wait for the next simulation tick signal
-            signalled = self._tick_event.wait(timeout=1.0)
-            if not signalled:
-                continue  # timed out — check stop_event and retry
-
-            self._tick_event.clear()
-            self._tick_counter += 1
-
-            if self._tick_counter % self.attack_interval == 0:
-                self._launch_attack()
-
-        logger.info("[EVE] Eve thread stopped after %d ticks.", self._tick_counter)
+        """Thread kept for API compatibility; attacks are driven by attack_if_due()."""
+        logger.info("[EVE] Eve thread started (attack every %d ticks via main loop)",
+                    self.attack_interval)
+        self._stop_event.wait()   # just park until simulation calls stop()
+        logger.info("[EVE] Eve thread stopped.")
 
     # -----------------------------------------------------------------------
     # Attack logic
@@ -128,9 +119,17 @@ class Eve(threading.Thread):
     # -----------------------------------------------------------------------
     # Control
     # -----------------------------------------------------------------------
-    def signal_tick(self) -> None:
-        """Called by the simulation loop once per tick to advance Eve."""
-        self._tick_event.set()
+    def attack_if_due(self, tick: int) -> None:
+        """
+        Called **synchronously** from the simulation loop once per tick.
+
+        This is the primary attack driver.  Using the main loop's tick
+        counter guarantees Eve attacks at exactly tick 100, 200, 300…
+        regardless of thread scheduling latency.
+        """
+        self._tick_counter = tick
+        if tick % self.attack_interval == 0:
+            self._launch_attack()
 
     def stop(self) -> None:
         """Signal Eve to exit gracefully after the current tick."""

@@ -199,13 +199,13 @@ class SDN_Controller:
 
         if qber >= QBER_ALERT_THRESHOLD:
             logger.warning(
-                "⚠️  HIGH QBER ALERT on link (%d↔%d): QBER=%.3f "
-                "(threshold=%.2f) — possible Intercept-Resend attack!",
+                "[ALERT] HIGH QBER on link (%d<->%d): QBER=%.3f "
+                "(threshold=%.2f) -- possible Intercept-Resend attack!",
                 u, v, qber, QBER_ALERT_THRESHOLD,
             )
 
         logger.debug(
-            "Telemetry updated (%d↔%d) K_curr=%.1f bits  QBER=%.4f",
+            "Telemetry updated (%d<->%d) K_curr=%.1f bits  QBER=%.4f",
             u, v, k_curr, qber,
         )
 
@@ -239,7 +239,7 @@ class SDN_Controller:
         # ── Guard: prune links with critically low key buffers ──────────────
         if k_curr < self.k_min:
             logger.debug(
-                "Link (%d↔%d) pruned: K_curr=%.1f < K_min=%.1f",
+                "Link (%d<->%d) pruned: K_curr=%.1f < K_min=%.1f",
                 u, v, k_curr, self.k_min,
             )
             return math.inf
@@ -256,7 +256,7 @@ class SDN_Controller:
         cost: float = distance_term + key_term + qber_term
 
         logger.debug(
-            "QoSec cost (%d↔%d): dist=%.4f  key=%.4f  qber=%.4f  total=%.4f",
+            "QoSec cost (%d<->%d): dist=%.4f  key=%.4f  qber=%.4f  total=%.4f",
             u, v, distance_term, key_term, qber_term, cost,
         )
         return cost
@@ -325,8 +325,8 @@ class SDN_Controller:
                 "all links pruned due to insufficient key material."
             )
         logger.info(
-            "QoSec path %d→%d : %s  (total cost=%.4f)",
-            src, dst, " → ".join(map(str, path)), total_cost,
+            "QoSec path %d->%d : %s  (total cost=%.4f)",
+            src, dst, " -> ".join(map(str, path)), total_cost,
         )
         return path
 

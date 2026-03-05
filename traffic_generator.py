@@ -162,7 +162,7 @@ class TrafficGenerator:
         except nx.NetworkXNoPath:
             req.failure_reason = "No feasible QoSec path (all routes pruned)"
             logger.warning(
-                "Tick %d | Request %d→%d BLOCKED: %s",
+                "Tick %d | Request %d->%d BLOCKED: %s",
                 req.tick, req.src, req.dst, req.failure_reason,
             )
             return
@@ -174,16 +174,16 @@ class TrafficGenerator:
         if self._relay_key(path, req.key_bits):
             req.success = True
             logger.debug(
-                "Tick %d | Key %d→%d OK  path=%s",
+                "Tick %d | Key %d->%d OK  path=%s",
                 req.tick, req.src, req.dst,
-                " → ".join(map(str, path)),
+                " -> ".join(map(str, path)),
             )
         else:
             req.failure_reason = "Key buffer exhaustion on one or more hops"
             logger.warning(
-                "Tick %d | Key %d→%d FAIL (buffer low)  path=%s",
+                "Tick %d | Key %d->%d FAIL (buffer low)  path=%s",
                 req.tick, req.src, req.dst,
-                " → ".join(map(str, path)),
+                " -> ".join(map(str, path)),
             )
 
     # -----------------------------------------------------------------------

@@ -38,7 +38,7 @@ from traffic_generator import TrafficGenerator
 def _configure_logging(level: str = "INFO") -> None:
     handler = colorlog.StreamHandler(sys.stdout)
     handler.setFormatter(colorlog.ColoredFormatter(
-        "%(log_color)s%(levelname)-8s%(reset)s %(cyan)s[tick %(tick)-4s]%(reset)s %(message)s",
+        "%(log_color)s%(levelname)-8s%(reset)s %(message)s",
         log_colors={
             "DEBUG":    "white",
             "INFO":     "green",
@@ -52,25 +52,6 @@ def _configure_logging(level: str = "INFO") -> None:
     logging.root.addHandler(handler)
 
 
-# ---------------------------------------------------------------------------
-# Tick-aware log filter (injects tick number into every log record)
-# ---------------------------------------------------------------------------
-class _TickFilter(logging.Filter):
-    def __init__(self) -> None:
-        super().__init__()
-        self.current_tick: int = 0
-
-    def filter(self, record: logging.LogRecord) -> bool:  # type: ignore[override]
-        record.tick = self.current_tick  # type: ignore[attr-defined]
-        return True
-
-
-_tick_filter = _TickFilter()
-
-
-# ---------------------------------------------------------------------------
-# Simulation parameters
-# ---------------------------------------------------------------------------
 SIM_TICKS: int = 500
 TICK_DT: float = 0.01          # 10 ms per tick
 TELEMETRY_INTERVAL: int = 5    # Push telemetry to controller every N ticks
@@ -97,7 +78,6 @@ def run_simulation(
     seed      : RNG seed for reproducibility.
     """
     _configure_logging(log_level)
-    logging.root.addFilter(_tick_filter)
     logger = logging.getLogger(__name__)
 
     logger.info("=" * 60)
@@ -142,8 +122,6 @@ def run_simulation(
 
     # ── Main loop ───────────────────────────────────────────────────────────
     for tick in range(1, ticks + 1):
-        _tick_filter.current_tick = tick
-
         # 1. Quantum key generation
         qdp.tick(dt=tick_dt)
 
@@ -155,8 +133,8 @@ def run_simulation(
             for u, v, k_curr, qber in qdp.all_link_states():
                 controller.update_telemetry(u, v, k_curr, qber)
 
-        # 4. Signal Eve
-        eve.signal_tick()
+        # 4. Drive Eve synchronously — guarantees attacks at exact tick multiples
+        eve.attack_if_due(tick)
 
         # 5. Periodic link table print
         if tick % PRINT_INTERVAL == 0:
