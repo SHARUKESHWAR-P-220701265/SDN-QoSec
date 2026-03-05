@@ -1,0 +1,60 @@
+# ── Virtual Environment ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# ── Distribution / packaging ──────────────────────────────────────────────────
+*.egg-info/
+dist/
+build/
+*.egg
+MANIFEST
+*.whl
+
+# ── Test & coverage artifacts ─────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.lcov
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+*.env.local
+
+# ── IDEs & editors ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.code-workspace
+
+# ── OS clutter ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs & simulation output ──────────────────────────────────────────────────
+*.log
+logs/
+simulation_output/
+
+# ── Jupyter (if used for analysis) ───────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── MyPy / type checking ──────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json

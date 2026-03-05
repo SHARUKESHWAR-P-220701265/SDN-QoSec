@@ -1,0 +1,16 @@
+# ── Core quantum network simulation ──────────────────────────────────────────
+qunetsim==0.1.3.post1          # BB84 / quantum channel simulation
+
+# ── Graph topology & routing ──────────────────────────────────────────────────
+networkx>=3.1                   # Global Knowledge Map + Dijkstra routing
+
+# ── Numerical / scientific ────────────────────────────────────────────────────
+numpy>=1.26                     # Poisson traffic distribution, math helpers
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+scipy>=1.11                     # Optional: additional stats / exponential helpers
+colorlog>=6.7                   # Coloured console output for simulation ticks
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=7.4
+pytest-timeout>=2.1             # Guard against hung quantum threads in tests
