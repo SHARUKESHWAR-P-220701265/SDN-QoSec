@@ -188,6 +188,15 @@ class QuantumDataPlane:
             generated = max(0.0, raw + noise)
             buf.deposit(generated)
 
+            # ── QBER natural decay ──────────────────────────────────────
+            # When Eve is not actively attacking, the quantum channel's
+            # error rate drifts back towards the physical baseline.
+            # Decay rate: 5 % of the delta per tick (exponential decay).
+            with buf._lock:
+                if buf.qber > BASE_QBER:
+                    buf.qber -= 0.05 * (buf.qber - BASE_QBER)
+                    buf.qber = max(BASE_QBER, buf.qber)
+
     # -----------------------------------------------------------------------
     # OTP Trusted Repeater relay
     # -----------------------------------------------------------------------

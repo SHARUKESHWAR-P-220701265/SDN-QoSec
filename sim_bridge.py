@@ -54,15 +54,25 @@ class SimState:
         self._lock = threading.RLock()
         self.tick: int = 0
         self.running: bool = False
-        self.finished: bool = False
         self.speed_ms: int = 100  # ms pause between ticks (UI slider)
-        self.max_ticks: int = SIM_TICKS_DEFAULT
+
 
         # Components
         self.controller: Optional[SDN_Controller] = None
         self.qdp: Optional[QuantumDataPlane] = None
         self.eve: Optional[Eve] = None
         self.generator: Optional[TrafficGenerator] = None
+
+        # Chaos / stress-testing multipliers (1.0 = normal)
+        self.traffic_mult: float = 1.0   # 1×–8×
+        self.eve_aggression: float = 1.0  # 1×–10×
+        self.keygen_pct: float = 100.0    # 100%–10%
+
+        # Base values (captured at init so multipliers apply cleanly)
+        self._base_lam: float = 2.0
+        self._base_eve_interval: int = 100
+        self._base_qber_spike: float = 0.15
+        self._base_rate_bps: float = 10_000.0
 
         # Time-series history
         self.ts_ticks: deque = deque(maxlen=MAX_HISTORY)
@@ -101,13 +111,45 @@ class SimState:
             rng_seed=42,
         )
 
+    def _apply_chaos(self) -> None:
+        """Apply current chaos multipliers to simulation components.
+
+        Scaling curves are chosen to feel realistic:
+        - Traffic: quadratic — gentle early ramp, aggressive at high end
+        - Eve:    exponential — attacks escalate sharply
+        - KeyGen: linear percentage — intuitive and predictable
+        """
+        if self.generator:
+            # Quadratic: mult 1→1×, 4→10×, 8→~37× effective requests
+            # Actually keep it practical: direct multiply, the quadratic
+            # feel comes from the Poisson variance scaling with lambda.
+            self.generator.lam = self._base_lam * self.traffic_mult
+
+        if self.eve:
+            # Interval shrinks: 100/1=100, 100/3≈33, 100/10=10 ticks
+            self.eve.attack_interval = max(10, int(
+                self._base_eve_interval / self.eve_aggression
+            ))
+            # QBER spike grows sub-linearly: 0.15 → ~0.28 at 5× → ~0.40 at 10×
+            # Uses sqrt for realistic feel — doubling aggression doesn't
+            # double the physical QBER an eavesdropper can inject.
+            self.eve.qber_spike = min(
+                0.45,
+                self._base_qber_spike * math.sqrt(self.eve_aggression),
+            )
+
+        if self.qdp:
+            self.qdp.rate_bps = self._base_rate_bps * (self.keygen_pct / 100.0)
+
     def reset(self) -> None:
         with self._lock:
             if self.eve:
                 self.eve.stop()
             self.tick = 0
             self.running = False
-            self.finished = False
+            self.traffic_mult = 1.0
+            self.eve_aggression = 1.0
+            self.keygen_pct = 100.0
             self.ts_ticks.clear()
             self.ts_blocking.clear()
             self.ts_avg_kcurr.clear()
@@ -120,10 +162,11 @@ class SimState:
     def step(self) -> None:
         """Advance one tick."""
         with self._lock:
-            if self.finished:
-                return
             self.tick += 1
             t = self.tick
+
+            # 0. Apply live chaos multipliers
+            self._apply_chaos()
 
             # 1. Quantum key generation
             self.qdp.tick(dt=TICK_DT)
@@ -151,10 +194,6 @@ class SimState:
             self.ts_total_requests.append(self.generator._total_requests)
             self.ts_successful.append(self.generator._successful)
             self.ts_failed.append(self.generator._failed)
-
-            if t >= self.max_ticks:
-                self.finished = True
-                self.running = False
 
     def get_state(self) -> Dict[str, Any]:
         with self._lock:
@@ -186,9 +225,7 @@ class SimState:
 
             return {
                 "tick": self.tick,
-                "max_ticks": self.max_ticks,
                 "running": self.running,
-                "finished": self.finished,
                 "speed_ms": self.speed_ms,
                 "nodes": snapshot["nodes"],
                 "links": links,
@@ -206,6 +243,11 @@ class SimState:
                     "eta": self.controller.eta,
                     "k_min": self.controller.k_min,
                     "k_threshold": self.controller.k_threshold,
+                },
+                "chaos": {
+                    "traffic_mult": self.traffic_mult,
+                    "eve_aggression": self.eve_aggression,
+                    "keygen_pct": self.keygen_pct,
                 },
                 "timeseries": {
                     "ticks": list(self.ts_ticks),
@@ -231,7 +273,7 @@ CORS(app)
 
 def _sim_loop() -> None:
     """Background loop that advances the simulation while running."""
-    while sim.running and not sim.finished:
+    while sim.running:
         sim.step()
         time.sleep(sim.speed_ms / 1000.0)
 
@@ -253,7 +295,7 @@ def api_control():
     action = data.get("action", "")
 
     if action == "start":
-        if not sim.running and not sim.finished:
+        if not sim.running:
             sim.running = True
             sim_thread = threading.Thread(target=_sim_loop, daemon=True)
             sim_thread.start()
@@ -277,6 +319,18 @@ def api_config():
     data = request.get_json(force=True)
     if "speed_ms" in data:
         sim.speed_ms = max(10, min(2000, int(data["speed_ms"])))
+    return jsonify({"ok": True})
+
+
+@app.route("/api/chaos", methods=["POST"])
+def api_chaos():
+    data = request.get_json(force=True)
+    if "traffic_mult" in data:
+        sim.traffic_mult = max(1.0, min(8.0, float(data["traffic_mult"])))
+    if "eve_aggression" in data:
+        sim.eve_aggression = max(1.0, min(10.0, float(data["eve_aggression"])))
+    if "keygen_pct" in data:
+        sim.keygen_pct = max(10.0, min(100.0, float(data["keygen_pct"])))
     return jsonify({"ok": True})
 
 

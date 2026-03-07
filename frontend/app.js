@@ -260,14 +260,12 @@ function renderEveTable(attacks) {
 // ── Header Updaters ───────────────────────────────────────────────────────
 function updateHeader(state) {
     document.getElementById("tick-display").textContent = state.tick;
-    document.getElementById("tick-max").textContent = `/ ${state.max_ticks}`;
     document.getElementById("blocking-display").textContent = (state.blocking_rate * 100).toFixed(2) + "%";
     document.getElementById("requests-display").textContent = state.total_requests;
 
     const dot = document.getElementById("status-dot");
     dot.className = "status-dot";
-    if (state.finished) { dot.classList.add("finished"); dot.title = "Finished"; }
-    else if (state.running) { dot.classList.add("running"); dot.title = "Running"; }
+    if (state.running) { dot.classList.add("running"); dot.title = "Running"; }
     else { dot.classList.add("paused"); dot.title = "Paused"; }
 
     // Params
@@ -314,6 +312,7 @@ async function poll() {
             renderTrafficTable(s.traffic);
             renderEveTable(s.attack_log);
             updateHeader(s);
+            syncStressSliders(s.chaos);
 
             // Charts
             const ts = s.timeseries;
@@ -357,6 +356,72 @@ speedSlider.addEventListener("input", () => {
         body: JSON.stringify({ speed_ms: ms }),
     });
 });
+
+// ── Stress Testing Panel ──────────────────────────────────────────────────
+const stressBar = document.getElementById("stress-bar");
+const stressToggle = document.getElementById("stress-toggle");
+const sliderTraffic = document.getElementById("slider-traffic");
+const sliderEve = document.getElementById("slider-eve");
+const sliderKeygen = document.getElementById("slider-keygen");
+const valTraffic = document.getElementById("val-traffic");
+const valEve = document.getElementById("val-eve");
+const valKeygen = document.getElementById("val-keygen");
+
+stressToggle.addEventListener("click", () => {
+    stressBar.classList.toggle("expanded");
+});
+
+// Debounce helper
+let _chaosTimer = null;
+function sendChaos() {
+    clearTimeout(_chaosTimer);
+    _chaosTimer = setTimeout(() => {
+        fetch(`${API}/api/chaos`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                traffic_mult: parseFloat(sliderTraffic.value),
+                eve_aggression: parseFloat(sliderEve.value),
+                keygen_pct: parseFloat(sliderKeygen.value),
+            }),
+        });
+    }, 150);
+}
+
+function updateStressLabels() {
+    const tm = parseFloat(sliderTraffic.value);
+    const ea = parseFloat(sliderEve.value);
+    const kg = parseFloat(sliderKeygen.value);
+
+    const lam = (2.0 * tm).toFixed(1);
+    valTraffic.innerHTML = `${tm.toFixed(1)}× <em>(λ=${lam})</em>`;
+
+    const interval = Math.max(10, Math.round(100 / ea));
+    const spike = Math.min(0.45, 0.15 * Math.sqrt(ea)).toFixed(2);
+    valEve.innerHTML = `${ea.toFixed(1)}× <em>(every ${interval} ticks @ ${spike})</em>`;
+
+    const bps = Math.round(10000 * kg / 100);
+    valKeygen.innerHTML = `${kg.toFixed(0)}% <em>(${bps} bps)</em>`;
+}
+
+sliderTraffic.addEventListener("input", () => { updateStressLabels(); sendChaos(); });
+sliderEve.addEventListener("input", () => { updateStressLabels(); sendChaos(); });
+sliderKeygen.addEventListener("input", () => { updateStressLabels(); sendChaos(); });
+
+// Sync sliders from server state (e.g. after reset)
+function syncStressSliders(chaos) {
+    if (!chaos) return;
+    if (parseFloat(sliderTraffic.value) !== chaos.traffic_mult) {
+        sliderTraffic.value = chaos.traffic_mult;
+    }
+    if (parseFloat(sliderEve.value) !== chaos.eve_aggression) {
+        sliderEve.value = chaos.eve_aggression;
+    }
+    if (parseFloat(sliderKeygen.value) !== chaos.keygen_pct) {
+        sliderKeygen.value = chaos.keygen_pct;
+    }
+    updateStressLabels();
+}
 
 // ── Initial poll ──────────────────────────────────────────────────────────
 poll();

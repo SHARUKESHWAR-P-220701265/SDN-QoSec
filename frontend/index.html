@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1280">
     <title>SDQN — Software-Defined Quantum Network Dashboard</title>
-    <meta name="description" content="Real-time visualization dashboard for the SDQN QoSec simulation — quantum key distribution, BB84 protocol, and adversary detection.">
+    <meta name="description"
+        content="Real-time visualization dashboard for the SDQN QoSec simulation — quantum key distribution, BB84 protocol, and adversary detection.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
 
     <!-- D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -17,145 +21,179 @@
 
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<!-- ═══════════════════════════════ HEADER BAR ═══════════════════════════════ -->
-<header id="header">
-    <div class="header-left">
-        <div class="logo">
-            <span class="logo-icon">◈</span>
-            <h1>SDQN <span class="logo-sub">QoSec Dashboard</span></h1>
-        </div>
-        <div class="header-params" id="params-display"></div>
-    </div>
-    <div class="header-centre">
-        <div class="controls">
-            <button id="btn-reset" class="ctrl-btn" title="Reset">⟲</button>
-            <button id="btn-start" class="ctrl-btn accent" title="Start">▶</button>
-            <button id="btn-pause" class="ctrl-btn" title="Pause">❚❚</button>
-            <button id="btn-step" class="ctrl-btn" title="Step +1">⏭</button>
-        </div>
-        <div class="speed-control">
-            <label for="speed-slider">Speed</label>
-            <input type="range" id="speed-slider" min="10" max="500" value="100" step="10">
-            <span id="speed-label">100 ms</span>
-        </div>
-    </div>
-    <div class="header-right">
-        <div class="stat-pill">
-            <span class="stat-label">Tick</span>
-            <span class="stat-value" id="tick-display">0</span>
-            <span class="stat-max" id="tick-max">/ 500</span>
-        </div>
-        <div class="stat-pill">
-            <span class="stat-label">Blocking</span>
-            <span class="stat-value" id="blocking-display">0.00%</span>
-        </div>
-        <div class="stat-pill">
-            <span class="stat-label">Requests</span>
-            <span class="stat-value" id="requests-display">0</span>
-        </div>
-        <div class="status-dot" id="status-dot" title="Idle"></div>
-    </div>
-</header>
-
-<!-- ══════════════════════════════ MAIN GRID ════════════════════════════════ -->
-<main id="dashboard">
-
-    <!-- ─── Topology Graph ─── -->
-    <section class="panel panel-topo" id="panel-topo">
-        <div class="panel-header">
-            <h2>Network Topology</h2>
-            <span class="panel-badge" id="topo-badge">10 nodes · 18 links</span>
-        </div>
-        <div class="panel-body" id="topo-container">
-            <svg id="topo-svg"></svg>
-        </div>
-        <div class="topo-legend">
-            <span class="legend-item"><i style="background:#00d2c6"></i> Healthy</span>
-            <span class="legend-item"><i style="background:#f0b849"></i> Degraded</span>
-            <span class="legend-item"><i style="background:#e04f5f"></i> Critical / Attacked</span>
-            <span class="legend-item"><i style="background:#555"></i> Pruned</span>
-        </div>
-    </section>
-
-    <!-- ─── Metrics Charts ─── -->
-    <section class="panel panel-metrics" id="panel-metrics">
-        <div class="panel-header"><h2>Live Metrics</h2></div>
-        <div class="panel-body charts-stack">
-            <div class="chart-wrapper">
-                <canvas id="chart-blocking"></canvas>
+    <!-- ═══════════════════════════════ HEADER BAR ═══════════════════════════════ -->
+    <header id="header">
+        <div class="header-left">
+            <div class="logo">
+                <span class="logo-icon">◈</span>
+                <h1>SDQN <span class="logo-sub">QoSec Dashboard</span></h1>
             </div>
-            <div class="chart-wrapper">
-                <canvas id="chart-kcurr"></canvas>
+            <div class="header-params" id="params-display"></div>
+        </div>
+        <div class="header-centre">
+            <div class="controls">
+                <button id="btn-reset" class="ctrl-btn" title="Reset">⟲</button>
+                <button id="btn-start" class="ctrl-btn accent" title="Start">▶</button>
+                <button id="btn-pause" class="ctrl-btn" title="Pause">❚❚</button>
+                <button id="btn-step" class="ctrl-btn" title="Step +1">⏭</button>
             </div>
-            <div class="chart-wrapper">
-                <canvas id="chart-qber"></canvas>
+            <div class="speed-control">
+                <label for="speed-slider">Speed</label>
+                <input type="range" id="speed-slider" min="10" max="500" value="100" step="10">
+                <span id="speed-label">100 ms</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="stat-pill">
+                <span class="stat-label">Tick</span>
+                <span class="stat-value" id="tick-display">0</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-label">Blocking</span>
+                <span class="stat-value" id="blocking-display">0.00%</span>
+            </div>
+            <div class="stat-pill">
+                <span class="stat-label">Requests</span>
+                <span class="stat-value" id="requests-display">0</span>
+            </div>
+            <div class="status-dot" id="status-dot" title="Idle"></div>
+        </div>
+    </header>
+
+    <!-- ═════════════════════════ STRESS TESTING BAR ═══════════════════════════ -->
+    <section class="stress-bar" id="stress-bar">
+        <div class="stress-header" id="stress-toggle">
+            <span class="stress-title">⚡ Stress Testing</span>
+            <span class="stress-chevron" id="stress-chevron">▸</span>
+        </div>
+        <div class="stress-body" id="stress-body">
+            <div class="stress-slider-group">
+                <div class="stress-slider-item">
+                    <label for="slider-traffic">🔀 Traffic Load</label>
+                    <input type="range" id="slider-traffic" min="1" max="8" value="1" step="0.5">
+                    <span class="stress-value" id="val-traffic">1.0× <em>(λ=2.0)</em></span>
+                </div>
+                <div class="stress-slider-item">
+                    <label for="slider-eve">👁️ Eve Aggression</label>
+                    <input type="range" id="slider-eve" min="1" max="10" value="1" step="0.5">
+                    <span class="stress-value" id="val-eve">1.0× <em>(every 100 ticks)</em></span>
+                </div>
+                <div class="stress-slider-item">
+                    <label for="slider-keygen">⚡ Key Gen Rate</label>
+                    <input type="range" id="slider-keygen" min="10" max="100" value="100" step="5">
+                    <span class="stress-value" id="val-keygen">100% <em>(10000 bps)</em></span>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- ─── Link State Table ─── -->
-    <section class="panel panel-links" id="panel-links">
-        <div class="panel-header"><h2>Link State Table</h2></div>
-        <div class="panel-body table-scroll">
-            <table id="link-table">
-                <thead>
-                    <tr>
-                        <th>Link</th>
-                        <th>Dist (km)</th>
-                        <th>K_curr</th>
-                        <th>QBER</th>
-                        <th>Cost</th>
-                    </tr>
-                </thead>
-                <tbody id="link-table-body"></tbody>
-            </table>
-        </div>
-    </section>
+    <!-- ══════════════════════════════ MAIN GRID ════════════════════════════════ -->
+    <main id="dashboard">
 
-    <!-- ─── Traffic / BB84 Log ─── -->
-    <section class="panel panel-traffic" id="panel-traffic">
-        <div class="panel-header"><h2>Key Distribution Log</h2></div>
-        <div class="panel-body table-scroll">
-            <table id="traffic-table">
-                <thead>
-                    <tr>
-                        <th>Tick</th>
-                        <th>Src→Dst</th>
-                        <th>Path</th>
-                        <th>Bits</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="traffic-table-body"></tbody>
-            </table>
-        </div>
-    </section>
+        <!-- ─── Topology Graph ─── -->
+        <section class="panel panel-topo" id="panel-topo">
+            <div class="panel-header">
+                <h2>Network Topology</h2>
+                <span class="panel-badge" id="topo-badge">10 nodes · 18 links</span>
+            </div>
+            <div class="panel-body" id="topo-container">
+                <svg id="topo-svg"></svg>
+            </div>
+            <div class="topo-legend">
+                <span class="legend-item"><i style="background:#00d2c6"></i> Healthy</span>
+                <span class="legend-item"><i style="background:#f0b849"></i> Degraded</span>
+                <span class="legend-item"><i style="background:#e04f5f"></i> Critical / Attacked</span>
+                <span class="legend-item"><i style="background:#555"></i> Pruned</span>
+            </div>
+        </section>
 
-    <!-- ─── Eve Attack Log ─── -->
-    <section class="panel panel-eve" id="panel-eve">
-        <div class="panel-header">
-            <h2>🕵️ Eve — Attack Log</h2>
-            <span class="panel-badge eve-count" id="eve-count">0 attacks</span>
-        </div>
-        <div class="panel-body table-scroll">
-            <table id="eve-table">
-                <thead>
-                    <tr>
-                        <th>Tick</th>
-                        <th>Link</th>
-                        <th>QBER Injected</th>
-                        <th>K_curr</th>
-                    </tr>
-                </thead>
-                <tbody id="eve-table-body"></tbody>
-            </table>
-        </div>
-    </section>
+        <!-- ─── Metrics Charts ─── -->
+        <section class="panel panel-metrics" id="panel-metrics">
+            <div class="panel-header">
+                <h2>Live Metrics</h2>
+            </div>
+            <div class="panel-body charts-stack">
+                <div class="chart-wrapper">
+                    <canvas id="chart-blocking"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chart-kcurr"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chart-qber"></canvas>
+                </div>
+            </div>
+        </section>
 
-</main>
+        <!-- ─── Link State Table ─── -->
+        <section class="panel panel-links" id="panel-links">
+            <div class="panel-header">
+                <h2>Link State Table</h2>
+            </div>
+            <div class="panel-body table-scroll">
+                <table id="link-table">
+                    <thead>
+                        <tr>
+                            <th>Link</th>
+                            <th>Dist (km)</th>
+                            <th>K_curr</th>
+                            <th>QBER</th>
+                            <th>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody id="link-table-body"></tbody>
+                </table>
+            </div>
+        </section>
 
-<script src="app.js"></script>
+        <!-- ─── Traffic / BB84 Log ─── -->
+        <section class="panel panel-traffic" id="panel-traffic">
+            <div class="panel-header">
+                <h2>Key Distribution Log</h2>
+            </div>
+            <div class="panel-body table-scroll">
+                <table id="traffic-table">
+                    <thead>
+                        <tr>
+                            <th>Tick</th>
+                            <th>Src→Dst</th>
+                            <th>Path</th>
+                            <th>Bits</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="traffic-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ─── Eve Attack Log ─── -->
+        <section class="panel panel-eve" id="panel-eve">
+            <div class="panel-header">
+                <h2>🕵️ Eve — Attack Log</h2>
+                <span class="panel-badge eve-count" id="eve-count">0 attacks</span>
+            </div>
+            <div class="panel-body table-scroll">
+                <table id="eve-table">
+                    <thead>
+                        <tr>
+                            <th>Tick</th>
+                            <th>Link</th>
+                            <th>QBER Injected</th>
+                            <th>K_curr</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eve-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
 </body>
+
 </html>
