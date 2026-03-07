@@ -11,6 +11,10 @@ numpy>=1.26                     # Poisson traffic distribution, math helpers
 scipy>=1.11                     # Optional: additional stats / exponential helpers
 colorlog>=6.7                   # Coloured console output for simulation ticks
 
-# ── Testing ───────────────────────────────────────────────────────────────────
+# ── Dashboard ────────────────────────────────────────────────────────────────
+flask>=3.0                       # REST API bridge for the frontend dashboard
+flask-cors>=4.0                  # Cross-origin support for local dev
+
+# ── Testing ───────────────────────────────────────────────────────────────
 pytest>=7.4
 pytest-timeout>=2.1             # Guard against hung quantum threads in tests

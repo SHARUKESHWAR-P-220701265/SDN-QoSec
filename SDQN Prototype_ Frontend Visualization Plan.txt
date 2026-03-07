@@ -1,0 +1,54 @@
+﻿________________
+Project Overview: SDQN Prototype Documentation
+
+
+Objective: To build a prototype Software-Defined Quantum Network (SDQN) that mitigates service blocking caused by key exhaustion in Quantum Key Distribution (QKD) networks. The system utilizes a novel Quality-of-Security (QoSec) routing algorithm that treats secret keys as a dynamic resource.
+
+
+1. System Requirements & Toolchain
+To implement the hybrid architecture, the following stack is required:
+* Core Language: Python 3.9.
+
+* Classical Control Plane (Routing): NetworkX for graph-based routing calculations.
+
+* Quantum Data Plane (Network Physics): QuNetSim for discrete-event simulation of quantum nodes and channels.
+
+* Quantum Data Plane (Sub-atomic Physics): IBM Qiskit (custom integration) to simulate actual qubit generation, superposition, and measurement.
+* Frontend Dashboard: Streamlit or Dash (Python-based frameworks) to build the real-time interactive visualization.
+2. Current Implementation Status (What's Been Done)
+The logical framework of the paper has been successfully implemented and verified:
+   * Network Construction: The SDN_Controller class successfully initializes a global knowledge map with a 10-node, 18-link mesh topology representing a metropolitan area network.
+
+   * QoSec Routing Engine: The custom link cost function has been successfully mapped to NetworkX shortest-path algorithms, pruning links when the key buffer drops below 50 bits. The formula implemented is:
+
+$$C_{link}(u, v) = \alpha(D_{uv} / D_{max}) + \beta(K_{threshold} / K_{curr}(u, v)) + \gamma e^{(\eta \cdot QBER_{uv})}$$
+   * Simulation Environment: User traffic is correctly generating key requests via a Poisson distribution ($\lambda=2$).
+
+   * Adversary Injection: The "Eve" thread is actively intercepting and resending data every 100 ticks, successfully causing the Quantum Bit Error Rate (QBER) to spike to 15%.
+
+3. Immediate Next Steps (The "Physics" Engine)
+Before building the visual layer, the data plane stubs must be replaced with actual physics simulations.
+      * Integrate Qiskit with QuNetSim: Replace the background key generation stub with a function that calls Qiskit to generate raw bits using the BB84 protocol at a base rate of 10 kbps.
+
+      * Calculate Live QBER: Program Qiskit to compare Alice's and Bob's sifted keys to mathematically generate the QBER, rather than relying on a hardcoded variable.
+________________
+Major Focus: The Frontend Architecture (Seeing the "Quantum")
+To prove this is a quantum project and not just a classical network simulator, your frontend must visualize the invisible. A Python-based Streamlit dashboard is the most efficient way to achieve this, split into two main views.
+View 1: The Macro Level (Network Topology & Routing)
+This section proves the effectiveness of the SDQN architecture. * Dynamic Interactive Graph: Use a library like Plotly or PyVis to render the 10-node mesh.
+         * Live Edge Coloring: Program the links (edges) to change color based on their local Key Buffer ($K_{buf}$). Healthy links are green. As a link's available key volume ($K_{curr}$) drops, the edge turns yellow, then red.
+
+         * Visualizing Rerouting: When a user requests a key, animate a pulse along the chosen path. When Eve attacks and QBER spikes above 11% (rendering the link insecure), show a visual alert on that specific edge, and immediately animate the QoSec algorithm carving a new path around the compromised link.
+
+         * Metrics Panel: Display live line charts showing Service Blocking Probability and Average Key Buffer Levels, proving that QoSec extends network longevity compared to standard Shortest Path First (SPF) routing.
+
+View 2: The Micro Level (Quantum Mechanics in Action)
+This is the core "selling point." When an audience member asks to see the quantum mechanics, you navigate to this view. * Live Qubit Visualizer: Use Qiskit's plot_bloch_multivector tool. When keys are being generated, show a 3D Bloch sphere actively rotating as Hadamard gates push photons into superposition.
+            * The BB84 Protocol Live Feed: Create a live table showing:
+            * Alice's Bit & Random Basis
+            * The encoded Quantum State (e.g., $|+\rangle$ or $|1\rangle$)
+            * Bob's Random Measurement Basis
+            * The resulting Sifted Key
+            * The Observer Effect: Create an interactive "Eve Toggle." When flipped, show the visual mathematical collapse of the wave function on the Bloch sphere mid-transit. Show the audience exactly how Eve guessing the wrong measurement basis physically alters the photon, inevitably driving the QBER up to the 15% threshold.
+
+________________
